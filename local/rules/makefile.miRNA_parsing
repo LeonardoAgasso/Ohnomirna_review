@@ -1,0 +1,336 @@
+.DELETE_ON_ERROR:
+.DEFAULT_GOAL := all
+.PHONY: clean all
+
+
+# =====================================================================
+#                         VARIABLES
+# =====================================================================
+MIRGENEDB_VERSION := 3.0
+SPECIES := hsa
+MIRGENEDB_GFF_URL := https://mirgenedb.org/
+ENSEMBL_URL := http://www.ensembl.org/biomart/martservice
+GENCODE_RELEASE := 47
+MIRBASE_DOWNLOAD_URL := https://mirbase.org/download/
+# =====================================================================
+
+
+all: $(SPECIES)_mirgenedb$(MIRGENEDB_VERSION)_to_everything.tsv
+
+clean: 
+	rm *.gff3 *.gff *.tsv
+
+
+
+
+# =====================================================================
+#                         DOWNLOAD SECTION
+# =====================================================================
+## Ensembl
+ensembl.mirna.tsv:
+	wget -O $@ --post-file ../local/src/hsa_mart_mirna_query.xml '$(ENSEMBL_URL)'
+    # 1,945 Ensembl IDs and 1,945 Transcript Mirbase names (e.g. hsa-mir-196a)
+    # 1,853 miRNA names (e.g. MIR27A, MIR1267 etc.), redundancy with different transcript IDs
+    # 1,846 Ensembl ID for primary transcript (e.g. MI0014200, MI0006404, etc.)
+    # 1,920 transcript names (e.g. MIR124-1-201, MIR126-201, etc.)
+    # 1,945 different positions (chr, start, end, strand)
+
+
+## miRBase
+miRNA.dat:
+	wget '$(MIRBASE_DOWNLOAD_URL)miRNA.dat'
+
+hairpin.fa:
+	wget '$(MIRBASE_DOWNLOAD_URL)hairpin.fa'
+
+mature.fa:
+	wget '$(MIRBASE_DOWNLOAD_URL)mature.fa'
+
+mirbase_hsa.gff3:
+	wget --no-check-certificate -O $@ '$(MIRBASE_DOWNLOAD_URL)hsa.gff3'
+
+
+## MirGeneDB
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).gff:
+	wget -O $@ '$(MIRGENEDB_GFF_URL)gff/$(MIRGENEDB_SPECIES)?sort=pos&all=1'
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).bed:
+	wget -O$@ '$(MIRGENEDB_GFF_URL)static/data/hsa/hsa-all.bed'
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).precursor_sequence.fa:
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?pre=1'
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).precursor_sequence_wflanks.fa:
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?pri=1'
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).mature_sequence.fa:
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?mat=1'
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).star_sequence.fa:
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?star=1'
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).5p_mature_sequence.fa:
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?prime=5'
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).3p_mature_sequence.fa:
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?prime=3'
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).loop_sequence.fa:
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?loop=1'
+
+
+## GENCODE
+gencode_data.gff3:
+	wget -O $@.gz 'https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_$(GENCODE_RELEASE)/gencode.v$(GENCODE_RELEASE).annotation.gff3.gz'
+	gunzip $@.gz;
+# =====================================================================
+
+
+
+
+# =====================================================================
+#                        PARSE + CLEAN SECTION
+# =====================================================================
+## miRBase GFF parsing
+mirbase_$(SPECIES).primary_transcript.tsv: mirbase_$(SPECIES).gff3
+	cat $< | awk -F"\t" 'NR>13 && $$3=="miRNA_primary_transcript"' | everygff2tab.py -g GFF3 ID Alias Name > $@
+
+mirbase_$(SPECIES).mature_mirna.tsv: mirbase_$(SPECIES).gff3
+	cat $< | awk -F"\t" 'NR>13 && $$3=="miRNA"' | everygff2tab.py -g GFF3 ID Alias Name Derives_from > $@
+
+## MirGeneDB parsing
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).tsv: mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).gff
+	cat $< | awk '!/^#/' | everygff2tab.py -g GFF3 ID Alias > $@
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).pre_mirna.tsv: mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).tsv
+	cat $< | awk -F"\t" '$$3=="pre_miRNA"' > $@
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).mature_mirna.tsv: mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).tsv
+	cat $< | awk -F"\t" '$$3=="miRNA"' > $@
+
+## GENCODE miRNAs: extract features
+gencode_data.tsv: gencode_data.gff3
+	cat $< | awk '!/^#/' | everygff2tab.py -g GFF3 ID gene_type gene_name transcript_type transcript_name exon_number exon_id level transcript_support_level tag > $@
+
+gencode.mirna_genes.tsv: gencode_data.tsv
+	cat $< | awk -F"\t" '$$3=="gene" {print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10"\t"$$9"\t"$$11}' |\
+	awk -F"\t" -v OFS="\t" 'gsub(/\.[0-9]+/, "", $$4)' |\
+	awk -F"\t" '$$6=="miRNA"' > $@
+    # NR = 1,879
+    #
+    # Unique miRNA names (e.g. MIR429, MIR200A etc.): 1,877
+    #    - MIR6089: two identically positioned miRNAs but on chrX and chrY
+    #    - MIR3690: two identically positioned miRNAs but on chrX and chrY
+    # ENSG00000284550 is reported with "hsa-mir-8069-1" as its miRNA name
+    # SNORD138 (ENSG00000284078) is here reported as a miRNA, but it's actually a snoRNA
+    # Unique miRNA gene Ensemble IDs (ENSG...):        1,879
+    # Unique positions (chr, start, end, strand): 1,879
+    # 25 miRNA genes don't have a name (the gene ID is used)
+
+gencode.mirna_transcripts.tsv: gencode_data.tsv
+	cat $< | awk -F"\t" '$$3=="transcript" {print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10"\t"$$9"\t"$$11}' |\
+	awk -F"\t" -v OFS="\t" 'gsub(/\.[0-9]+/, "", $$4)' |\
+	awk -F"\t" '$$6=="miRNA"' > $@
+    # NR = 1,879
+    #
+    # Unique miRNA names (e.g. MIR429, MIR200A): 1,877
+    #	- MIR6089: two identically positioned miRNAs but on chrX and chrY
+    #	- MIR3690: two identically positioned miRNAs but on chrX and chrY
+    # ENSG00000284550 is reported with "hsa-mir-8069-1" as its miRNA name
+    # SNORD138 (ENSG00000284078) is here reported as a miRNA, but it's actually a snoRNA
+    # Unique miRNA transcript Ensemble IDs (ENST...): 1,879
+    # 25 miRNA transcripts (The same as in gencode.mirna_genes.tsv) don't have a name (the gene ID is used)
+
+gencode.mirna_genes_transcripts.tsv: gencode.mirna_genes.tsv gencode.mirna_transcripts.tsv
+	cat $(word 1, $^) | awk -F"\t" '{print $$0"\t"$$1":"$$2":"$$3":"$$5":"$$8}' > keys;
+	cat $(word 2, $^) | awk -F"\t" '{print $$1":"$$2":"$$3":"$$5":"$$8"\t"$$4}' | sort | uniq > values;
+	cat keys | translate -d -v -e no_gencode_transcript values 9 > $@;
+	rm keys values
+    # Keys are the genomic locus (chrom, start, end, strand) and miRNA name so that there's no space for ambiguity
+    # NR = 1,879
+    #
+    # Position is the gene locus
+    # No rows with "no_gencode_transcript" detected: we have a transcript for each gene
+    # Unique miRNA names (e.g. MIR429, MIR200A): 1,877
+    # The 25 miRNA transcripts don't have a name (the gene ID is used)
+
+## GENCODE protein-coding genes: extract features
+gencode.protein_coding_genes.bed: gencode_data.gff3
+	cat $< | awk '!/^#/' | everygff2tab.py -g GFF3 ID gene_type gene_name level hgnc_id havana_gene tag |\
+	awk -F"\t" '$$3=="gene" {print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10"\t"$$9"\t"$$11"\t"$$15"\t"$$2}' |\
+	awk -F"\t" -v OFS="\t" 'gsub(/\.[0-9]+/, "", $$4)' |\
+	awk -F"\t" '$$6=="protein_coding"' > $@
+    # NR = 20,092
+    #
+    # Different gene names: 20,065
+    # Different positions: 20,089
+    # ZBED1, WASH6P ... (Same position on chrX and chrY)
+    # HERC3 (overlapping locus and readthrough_gene)
+
+gencode.protein_coding_exons.bed: gencode_data.gff3
+	cat $< | awk '!/^#/' | everygff2tab.py -g GFF3 ID gene_type gene_name level hgnc_id havana_gene tag |\
+	awk -F"\t" '$$3=="exon" {print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10"\t"$$9"\t"$$11"\t"$$15"\t"$$2}' |\
+	awk -F"\t" -v OFS="\t" 'gsub(/\.[0-9]+/, "", $$4)' |\
+	awk -F"\t" '$$6=="protein_coding"' > $@
+    # NR = 1,410,258
+
+gencode.protein_coding_exons.MANE_Select.bed: gencode_data.gff3
+	cat $< | awk '!/^#/' | everygff2tab.py -g GFF3 ID gene_type gene_name level hgnc_id havana_gene tag |\
+	awk -F"\t" '$$3=="exon" {print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10"\t"$$9"\t"$$11"\t"$$15"\t"$$2}' |\
+	awk -F"\t" -v OFS="\t" 'gsub(/\.[0-9]+/, "", $$4)' |\
+	awk -F"\t" '$$6=="protein_coding"' | grep MANE_Select > $@
+    # NR = 202,053
+
+gencode.protein_coding_exons.Ensembl_canonical.bed: gencode_data.gff3
+	cat $< | awk '!/^#/' | everygff2tab.py -g GFF3 ID gene_type gene_name level hgnc_id havana_gene tag |\
+	awk -F"\t" '$$3=="exon" {print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10"\t"$$9"\t"$$11"\t"$$15"\t"$$2}' |\
+	awk -F"\t" -v OFS="\t" 'gsub(/\.[0-9]+/, "", $$4)' |\
+	awk -F"\t" '$$6=="protein_coding"' | grep Ensembl_canonical > $@
+    # NR = 210,311
+
+gencode.protein_coding_exons.MANE_Select.Ensembl_canonical.bed: gencode_data.gff3
+	cat $< | awk '!/^#/' | everygff2tab.py -g GFF3 ID gene_type gene_name level hgnc_id havana_gene tag |\
+	awk -F"\t" '$$3=="exon" {print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10"\t"$$9"\t"$$11"\t"$$15"\t"$$2}' |\
+	awk -F"\t" -v OFS="\t" 'gsub(/\.[0-9]+/, "", $$4)' |\
+	awk -F"\t" '$$6=="protein_coding"' | grep MANE_Select | grep Ensembl_canonical > $@
+    # NR = 202,053
+# =====================================================================
+
+
+
+# =====================================================================
+#                  ENSEMBL / miRBase / MirGeneDB JOINING
+# =====================================================================
+gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.tsv: gencode.mirna_genes_transcripts.tsv ensembl.mirna.tsv
+	cat $(word 2, $^) | awk -F"\t" '$$8!="" && $$9!="" && $$10!=""' | awk -F"\t" '{print $$1"\t"$$8"\t"$$9"\t"$$10}' | sort | uniq > gene_id_key.dic;
+	cat $(word 1, $^) | awk -F"\t" '{print $$0"\t"$$4}' | translate -a -d -j -v -e geneID_not_in_ensembl gene_id_key.dic 10 | cut -f10 --complement > $@;
+	rm gene_id_key.dic;
+    # NR = 2,085
+    #
+    # Here the Gene ID is used as the key to merge GENCODE and Ensembl.
+    # Many miRNAs have different transcripts, each with the same ID but different names (e.g. MIR1302-2); 
+    # such cases seem pathological since the genomic locus of the transcript oftend does not change.
+
+gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.trans_ID_key.tsv: gencode.mirna_genes_transcripts.tsv ensembl.mirna.tsv
+	cat $(word 2, $^) | awk -F"\t" '$$8!="" && $$9!="" && $$10!=""' | awk -F"\t" '{print $$2"\t"$$8"\t"$$9"\t"$$10}' | sort | uniq > trans_id_key.dic;
+	cat $(word 1, $^) | awk -F"\t" '{print $$0"\t"$$9}' | translate -a -d -j -v -e transcriptID_not_in_ensembl trans_id_key.dic 10 | cut -f10 --complement > $@;
+	rm trans_id_key.dic;
+    # NR = 2,085
+    # 
+    # Same result as by using the gene ID as the key.
+    # Again, many miRNAs have different transcript, each with the same ID but different names (e.g. grep MIR1302-2)
+
+gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_name_key.tsv: gencode.mirna_genes_transcripts.tsv ensembl.mirna.tsv
+	cat $(word 2, $^) | awk -F"\t" '$$8!="" && $$9!="" && $$10!=""' | awk -F"\t" '{print $$10"\t"$$8"\t"$$9"\t"$$10}' | sort | uniq > trans_id_key.dic;
+	cat $(word 1, $^) | awk -F"\t" '{print $$0"\t"$$8}' | translate -a -d -j -v -e gene_name_not_in_ensembl trans_id_key.dic 10 | cut -f10 --complement > $@;
+	rm trans_id_key.dic;
+    # NR = 2,085
+    # 
+    # Same result as by using the gene ID as the key or the transcript ID as the key.
+    # Many miRNAs have different transcript, each with the same ID but different names (e.g. grep MIR1302-2)
+
+
+## Fix known missing accessions
+gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.tsv: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.tsv
+	cat $(word 1, $^) | grep -v geneID_not_in_ensembl | cut -f12 --complement > tmp_clean.tsv
+	cat $(word 1, $^) | grep geneID_not_in_ensembl | cut -f12 --complement | grep -v -E 'MIR320|SNORD138' >> tmp_clean.tsv
+	cat tmp_clean.tsv ./corrections/manual_corrections_1.tsv > $@
+	rm tmp_clean.tsv
+    # NR = 2,085
+    #
+    # manual_corrections_1.tsv has to be manually compiled
+
+## Link to mature miRNA and accession from miRBase
+gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs.tsv: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.tsv mirbase_hsa.mature_mirna.tsv
+	cat $(word 1, $^) | awk -F"\t" '{print $$0"\t"$$10}' > keys;
+	cat $(word 2, $^) | awk -F"\t" '{print $$12"\t"$$10","$$11}' | sort | uniq > values;
+	cat keys | translate -d -v -e no_mirbase_mature_mirna values 12 > $@;
+	rm keys values
+    # NR = 2,086
+
+gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.tsv: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.tsv mirbase_hsa.mature_mirna.tsv
+	cat $(word 1, $^) | awk -F"\t" '{print $$0"\t"$$10}' > keys;
+	cat $(word 2, $^) | awk -F"\t" '{print $$12"\t"$$10"\t"$$11}' | sort | uniq > values;
+	cat keys | translate -a -j -d -v -e no_mirbase_mature_mirna values 12 | cut -f12 --complement | sort | uniq > $@;
+	rm keys values
+    # NR = 3,110
+    #
+    # 30 transcripts have no mature miRNAs. Among these: 25 miRNAs without a gene name nor a transcript in Ensembl. Then:
+    # 	- MIR378G (hsa-mir-378g), not in MirGeneDB
+    # 	- MIR3713, not in MirGeneDB
+    # 	- MIR1973, not in MirGeneDB
+    # 	- MIR 4456, not in MirGeneDB
+    # 	- SNORD138, not in MirGeneDB (most likely not even a miRNA but a snoRNA)
+
+
+## Add miRGeneDB confidence flags
+gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.tsv: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.tsv mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).pre_mirna.tsv
+	cat $(word 1, $^) | awk -F"\t" '{print $$0"\t"$$10}' > keys;
+	cat $(word 2, $^) | awk -F"\t" '{print $$10"\t"$$9}' | sort | uniq > values;
+	cat keys | translate -d -a -v -j -e premirna_not_in_mirgenedb values 14 | cut -f14 --complement | sort | uniq > $@;
+	rm keys values;
+    # NR = 2,086
+    #
+    # We can track every miRNA in MirGeneDB back to other resources, except for MI0039502 (Hsa-Mir-9851) which is somehow not in Ensembl nor in GENCODE, but in MirGeneDB. It lacks a Gene ID, but MiRGeneDB reports all the information so we manually include it
+    # mirgenedb_not_confirmed 	--> NR = 
+    # mirgenedb_confirmed 		--> NR = 
+    # all the miRNAs that have empty fileds (no mature miRNA, no geneID in ensembl) aren't confirmed as "bona fide" by miRGeneDB
+
+
+gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.man_fix_2.tsv: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.tsv
+	cat $(word 1, $^) ./corrections/manual_correction_2.tsv > $@
+
+$(SPECIES)_mirgenedb$(MIRGENEDB_VERSION)_to_everything.tsv: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.man_fix_2.tsv
+	cat $< | awk -F"\t" '{print $$14"\t"$$0}' | cut -f15 --complement | sort | uniq > $@
+# =====================================================================	
+
+
+
+# =====================================================================
+#                  HOST GENE AND EXON OVERLAP ANALYSIS
+# =====================================================================
+gencode.mirna_genes.mirgenedb_flag.tsv: gencode.mirna_genes.tsv gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs.mirgenedb_flag_premirna.tsv
+	cat $(word 1, $^) | awk -F"\t" '{print $$0"\t"$$8}' > keys;
+	cat $(word 2, $^) | awk -F"\t" '{print $$8"\t"$$13}' | sort | uniq > values;
+	cat keys | translate -d -v -e mirgenedb_not_confirmed values 9 | sort | uniq > $@;
+	rm keys values;
+
+gencode.protein_coding_exons.harbored_mirna.mirgenedb_flag.tsv: gencode.mirna_genes.mirgenedb_flag.tsv gencode.protein_coding_exons.bed
+	bedtools intersect -wo -b $(word 1, $^) -a $(word 2, $^) | sort | uniq | awk -F"\t" '{if($$13-$$12==$$20) print $$0"\tfully_exonic"; else print $$0"\texon_junction"}' > $@
+
+gencode.protein_coding_exons.MANE_Select.harbored_mirna.mirgenedb_flag.tsv: gencode.mirna_genes.mirgenedb_flag.tsv gencode.protein_coding_exons.MANE_Select.bed
+	bedtools intersect -wo -b $(word 1, $^) -a $(word 2, $^) | sort | uniq | awk -F"\t" '{if($$13-$$12==$$20) print $$0"\tfully_exonic"; else print $$0"\texon_junction"}' > $@
+
+gencode.protein_coding_genes.harbored_mirna.mirgenedb_flag.tsv: gencode.mirna_genes.mirgenedb_flag.tsv gencode.protein_coding_genes.bed
+	bedtools intersect -wo -b $(word 1, $^) -a $(word 2, $^) | sort | uniq | awk -F"\t" '{if($$13-$$12==$$20) print $$0"\tfully_intragenic"; else print $$0"\tgene_junction"}' > $@
+# =====================================================================
+
+
+
+
+
+
+
+
+
+# =====================================================================
+#                 SEQUENCE FILES (MirBase and MiRGeneDB)
+# =====================================================================
+primirna.sequence.tsv: miRNA.dat
+	mir_emblparser.py < $< > $@
+
+maturemirna.sequence.tsv: mature.fa
+	mir_fastaparser.py < $< | awk -F"\t" '{print $$1"\t"$$3}' > $@
+# =====================================================================
+
+
+
+# =====================================================================
+#                      DICTIONARIES FOR LOOKUPS
+# =====================================================================
+gene_mature.dic: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.tsv
+	cat $< | cut -f8,13 | sort | uniq > $@
+
+gene_premirna.dic: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.tsv
+	cat $< | cut -f8,11 | sort | uniq > $@
+# =====================================================================

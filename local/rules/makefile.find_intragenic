@@ -1,0 +1,28 @@
+.DELETE_ON_ERROR:
+
+ORG_CAP := Hsa
+ORG := hsa
+
+ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.extended_info.tsv:
+	ln -s ../1_retrieve_Hsa_ohnomirnas/$@ ./$@
+
+gencode.protein_coding_genes.bed:
+	ln -s ../0_miRNA_parsing/$@ ./$@
+
+mgdb_3_$(ORG).premirna.tsv:
+	ln -s ../1_retrieve_Hsa_ohnomirnas/$@ ./$@
+
+mgdb_3_$(ORG).premirna.bed: mgdb_3_$(ORG).premirna.tsv
+	cat $< | awk -F"\t" '{print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10}' | sort | uniq > $@
+
+mgdb_3_$(ORG).premirna.host_gene.bed: mgdb_3_$(ORG).premirna.bed gencode.protein_coding_genes.bed
+	bedtools intersect -wb -a $(word 1, $^) -b $(word 2, $^) > $@
+
+mgdb_3_$(ORG).premirna.host_gene.compact.tsv: mgdb_3_$(ORG).premirna.host_gene.bed
+	cat $< | awk -F"\t" '{print $$4"\t"$$6"\t"$$10"\t"$$14}' | sort | uniq > $@
+
+mgdb_3_$(ORG).premirna.host_gene.compact.strip_mirna_name.dic: mgdb_3_$(ORG).premirna.host_gene.compact.tsv
+	cat $< | strip_mirna_name 1 > $@
+
+ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.extended_info.host_genes.tsv: ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.extended_info.tsv mgdb_3_$(ORG).premirna.host_gene.compact.strip_mirna_name.dic
+	cat $(word 1, $^) | awk -F"\t" 'NR>1' | translate -a -d -j -v -e intergenic $(word 2, $^) 1 | translate -a -d -j -v -e intergenic $(word 2, $^) 9 | sort | uniq > $@
