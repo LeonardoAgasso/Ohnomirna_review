@@ -1,0 +1,60 @@
+.DELETE_ON_ERROR:
+
+MIRGENEDB_VERSION := 3.0
+SPECIES := hsa
+SPECIES_CAP := Hsa
+SEED_MER := 7mer
+
+
+$(SPECIES)_mirgenedb$(MIRGENEDB_VERSION)_to_everything.tsv:
+	ln -s ../0_miRNA_parsing/$@ ./$@
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).mature_mirna.names_list.tsv:
+	ln -s ../0_miRNA_parsing/$@ ./$@
+
+ohnomirna_pairs_predict_Hsa_existent.mgdb.tsv:
+	ln -s ../1_retrieve_Hsa_ohnomirnas/$@ ./$@
+
+ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv:
+	ln -s ../2_find_WGD_intragenic/$@ ./$@
+
+
+mgdb_3_$(SPECIES).WGD_intragenic.tsv: ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv
+	cat $< | grep -v intergenic | grep -v not_related | awk -F"\t" '{print $$1"\t"$$8}' | sort | uniq > $@
+
+
+
+mgdb_3_$(SPECIES).premirna_paralog_pairs.extended_info.tsv:
+	ln -s ../3_retrieve_$(SPECIES_CAP)_paralogs/$@ ./$@
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).%.tsv:
+	ln -s ../miRNA_sequences/$@ ./$@
+
+mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).mature_sequence.tsv: mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).5p_mature_sequence.tsv mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).3p_mature_sequence.tsv
+	cat $(word 1, $^) $(word 2, $^) | sort | uniq > $@
+
+mgdb_3_$(SPECIES).premirna_paralog_pairs.mgdb_names.tsv: mgdb_3_$(SPECIES).premirna_paralog_pairs.extended_info.tsv
+	cat $< | awk -F"\t" '{print $$1"\t"$$6}' | sort | uniq > $@
+
+mgdb_3_$(SPECIES).collected_mature_pairs.mgdb_names.tsv: mgdb_3_$(SPECIES).premirna_paralog_pairs.mgdb_names.tsv mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).mature_mirna.names_list.tsv
+	cat $(word 1, $^) | collect_mgdb_mature $(word 2, $^) | sort | uniq > $@
+
+
+
+
+nw.$(SPECIES)_mgdb_$(MIRGENEDB_VERSION)_mature.$(SEED_MER).s%.tsv: mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).mature_sequence.tsv mgdb_3_$(SPECIES).collected_mature_pairs.mgdb_names.tsv
+	cat $(word 1, $^) | awk -F"\t" '{print ">"$$1"\n"$$2}' > fasta;
+	cat $(word 2, $^) > pairs;
+	miRAl_c.py -t $(SEED_MER) -f -a $@.fa -y -$* -n $* -p fasta < pairs > $@;
+	rm fasta pairs;
+	mv $@.fa ./nw_mature_alignments/$(SEED_MER)/$@.fa
+
+nw.$(SPECIES)_mgdb_$(MIRGENEDB_VERSION)_premirna.$(SEED_MER).s%.tsv: nw.$(SPECIES)_mgdb_$(MIRGENEDB_VERSION)_mature.$(SEED_MER).s%.tsv
+	cat $< | awk -F"\t" '{ gsub(/_5p\*?|_3p\*?/, "", $$1); print $$1"\t"$$2"\t"$$3}' | awk -F"\t" '{ gsub(/_5p\*?|_3p\*?/, "", $$2); print $$1"\t"$$2"\t"$$3}' | sort | uniq | find_best 1:2 3 > $@
+
+
+nw.$(SPECIES)_mgdb_$(MIRGENEDB_VERSION)_premirna.WGD_flag.$(SEED_MER).s%.tsv: nw.$(SPECIES)_mgdb_$(MIRGENEDB_VERSION)_premirna.$(SEED_MER).s%.tsv ohnomirna_pairs_predict_Hsa_existent.mgdb.tsv
+	cat $(word 1, $^) | flag_pairs -l WGD --both-orders -e SSD 1 2 $(word 2, $^) 1 2 | sort -k4 -r | uniq > $@
+
+nw.$(SPECIES)_mgdb_$(MIRGENEDB_VERSION)_premirna.WGD_flag.intragenic_flag.$(SEED_MER).s%.tsv: nw.$(SPECIES)_mgdb_$(MIRGENEDB_VERSION)_premirna.WGD_flag.$(SEED_MER).s%.tsv mgdb_3_$(SPECIES).WGD_intragenic.tsv
+	cat $(word 1, $^) | flag_pairs -l WGD_intragenic --both-orders -e NA 1 2 $(word 2, $^) 1 2 | sort -k4 -r | uniq > $@

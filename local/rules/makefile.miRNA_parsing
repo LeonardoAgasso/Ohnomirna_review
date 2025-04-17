@@ -7,10 +7,10 @@
 #                         VARIABLES
 # =====================================================================
 MIRGENEDB_VERSION := 3.0
+GENCODE_RELEASE := 47
 SPECIES := hsa
 MIRGENEDB_GFF_URL := https://mirgenedb.org/
 ENSEMBL_URL := http://www.ensembl.org/biomart/martservice
-GENCODE_RELEASE := 47
 MIRBASE_DOWNLOAD_URL := https://mirbase.org/download/
 # =====================================================================
 
@@ -40,43 +40,37 @@ ensembl.mirna.tsv:
 miRNA.dat:
 	wget '$(MIRBASE_DOWNLOAD_URL)miRNA.dat'
 
-hairpin.fa:
-	wget '$(MIRBASE_DOWNLOAD_URL)hairpin.fa'
-
-mature.fa:
-	wget '$(MIRBASE_DOWNLOAD_URL)mature.fa'
-
 mirbase_hsa.gff3:
 	wget --no-check-certificate -O $@ '$(MIRBASE_DOWNLOAD_URL)hsa.gff3'
 
 
 ## MirGeneDB
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).gff:
-	wget -O $@ '$(MIRGENEDB_GFF_URL)gff/$(MIRGENEDB_SPECIES)?sort=pos&all=1'
+	wget -O $@ '$(MIRGENEDB_GFF_URL)gff/$(SPECIES)?sort=pos&all=1'
 
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).bed:
 	wget -O$@ '$(MIRGENEDB_GFF_URL)static/data/hsa/hsa-all.bed'
 
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).precursor_sequence.fa:
-	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?pre=1'
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(SPECIES)?pre=1'
 
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).precursor_sequence_wflanks.fa:
-	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?pri=1'
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(SPECIES)?pri=1'
 
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).mature_sequence.fa:
-	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?mat=1'
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(SPECIES)?mat=1'
 
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).star_sequence.fa:
-	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?star=1'
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(SPECIES)?star=1'
 
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).5p_mature_sequence.fa:
-	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?prime=5'
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(SPECIES)?prime=5'
 
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).3p_mature_sequence.fa:
-	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?prime=3'
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(SPECIES)?prime=3'
 
 mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).loop_sequence.fa:
-	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(MIRGENEDB_SPECIES)?loop=1'
+	wget -O$@ '$(MIRGENEDB_GFF_URL)fasta/$(SPECIES)?loop=1'
 
 
 ## GENCODE
@@ -307,8 +301,12 @@ gencode.protein_coding_genes.harbored_mirna.mirgenedb_flag.tsv: gencode.mirna_ge
 
 
 
-
-
+# =====================================================================
+#                 MATURE LIST (MiRGeneDB)
+# =====================================================================
+mirgenedb3.0_hsa.mature_mirna.names_list.tsv: mirgenedb3.0_hsa.mature_mirna.tsv
+	cat $< | cut -f9 | sort | uniq > $@
+# =====================================================================
 
 
 
