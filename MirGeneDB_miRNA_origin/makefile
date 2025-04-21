@@ -1,0 +1,1 @@
+../local/rules/makefile.MirGeneDB_miRNA_origin

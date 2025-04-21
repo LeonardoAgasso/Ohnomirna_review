@@ -70,10 +70,7 @@ ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.
 	cat $< | awk -F"\t" '{print $$3"\t"$$10}' | sort | uniq | rsort > $@
 
 all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv: all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.tsv
-	cat $< | awk -F"\t" '{print $$8"\t"$$16}' | sort | uniq | rsort > $@
-
-all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.no_ohnomirna.tsv: all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.tsv
-	cat $(word 1, $^) | 
+	cat $< | awk -F"\t" '{print $$8"\t"$$16}' | sort | uniq | awk -F"\t" 'NR>1' | rsort > $@
 ######################################################
 
 
