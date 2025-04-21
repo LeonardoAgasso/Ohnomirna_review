@@ -1,1 +1,81 @@
-../local/rules/makefile.retrieve_Mmus_ohnomirnas
+.DELETE_ON_ERROR:
+
+ORG_CAP := Mmu
+ORG := mmu
+MIRGENEDB_VERSION := 3.0
+
+gnathostomata_ohnolog_reference.tsv:
+# This file has been compiled by hand based on Peterson et al. 2022 (Supplementary file 3 and Supplementary text)
+
+$(ORG)_mirgenedb$(MIRGENEDB_VERSION)_to_everything.tsv:
+	ln -s ../0_miRNA_parsing/$@ ./$@
+
+
+mgdb_3_$(ORG).gff:
+	wget -O$@ 'https://mirgenedb.org/gff/$(ORG)?all=1&sort=pos'
+
+$(ORG)_mirbase.gff3:
+	wget -O$@ 'https://www.mirbase.org/download/$(ORG).gff3'
+
+$(ORG)_mirbase_mirna.gff3: $(ORG)_mirbase.gff3
+	cat $< | awk -F"\t" '$$3=="miRNA"' | sort | uniq > $@
+
+$(ORG)_mirbase_mirna_primary_transcript.gff3: $(ORG)_mirbase.gff3
+	cat $< | awk -F"\t" '$$3=="miRNA_primary_transcript"' | sort | uniq > $@
+
+$(ORG)_mirbase_mirna.tsv: $(ORG)_mirbase_mirna.gff3
+	cat $< | everygff2tab -g GFF3 ID Alias Name Derives_from > $@
+
+$(ORG)_mirbase_mirna_primary_transcript.tsv: $(ORG)_mirbase_mirna_primary_transcript
+	cat $< | everygff2tab -g GFF3 ID Alias Name > $@
+
+$(ORG)_mirbase_primary_transcript_id_name.dic: $(ORG)_mirbase_mirna_primary_transcript.tsv
+	cat $< | awk -F"\t" '{print $$10"\t"$$11}' | sort | uniq > $@
+
+
+mgdb_3_$(ORG).mirna.gff: mgdb_3_$(ORG).gff
+	cat $< | awk -F"\t" '$$3=="miRNA"' | sort | uniq > $@
+# NR = 1027
+
+mgdb_3_$(ORG).premirna.gff: mgdb_3_$(ORG).gff
+	cat $< | awk -F"\t" '$$3=="pre_miRNA"' | sort | uniq > $@
+# NR = 514
+
+mgdb_3_$(ORG).%.tsv: mgdb_3_$(ORG).%.gff
+	cat $< | everygff2tab -g GFF3 ID Alias > $@
+
+
+$(ORG)_ohnolog_pairs_fromRef.tsv: gnathostomata_ohnolog_reference.tsv
+	cat $< | generate_pairs_from_ref $(ORG_CAP) | sort | uniq > $@
+
+ohnomirna_pairs_predict_$(ORG_CAP)_existent.mgdb.tsv: $(ORG)_ohnolog_pairs_fromRef.tsv mgdb_3_$(ORG).premirna.tsv
+	cat $(word 1, $^) | check_presence -i 1 2 -f 9 $(word 2, $^) > $@
+
+
+$(ORG)_%_id.dic: mgdb_3_$(ORG).%.tsv
+	cat $< | awk -F"\t" '{print $$9"\t"$$10}' | sort | uniq > $@
+
+$(ORG)_mgdb_id_name.tsv: $(ORG)_premirna_id.dic $(ORG)_mirbase_primary_transcript_id_name.dic
+	cat $(word 1, $^) | translate -a -d -j -v -e MISSING $(word 2, $^) 2 > $@
+    # 8 MISSING
+
+$(ORG)_mgdb_id_name.clean.tsv: $(ORG)_mgdb_id_name.tsv
+	cat $< | strip_mirna_name 1 > $@
+
+ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.tsv: ohnomirna_pairs_predict_$(ORG_CAP)_existent.mgdb.tsv $(ORG)_mgdb_id_name.clean.tsv
+	cat $(word 1, $^) | translate -a -d -j -v -e MISSING $(word 2, $^) 1 | translate -a -d -j -v -e MISSING $(word 2, $^) 4 > $@.tmp;
+	echo "#MiRGeneDB_name_1\tmirbase_ID_1\ttranscript_name_1\tMiRGeneDB_name_2\tmirbase_ID_2\ttranscript_name_2\tWGD\tCLG" >> $@;
+	cat $@.tmp >> $@;
+	rm $@.tmp
+
+ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.extended_info.tsv: ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.tsv $(ORG)_mirgenedb$(MIRGENEDB_VERSION)_to_everything.tsv
+	cat $(word 2, $^) | cut -f 1,5,9 | strip_mirna_name 1 | sort | uniq > tmp.dic;
+	cat $(word 1, $^) | awk -F"\t" 'NR>1' | translate -a -d -j -v -e ERROR tmp.dic 1 > tmp1;
+	cat tmp1 | translate -a -d -j -v -e ERROR tmp.dic 6 > tmp2;
+	echo "#MiRGeneDB_name_1\tgene_ID_1\tgene_name_1\tmirbase_premirna_accession_1\ttranscript_name_1\tMiRGeneDB_name_2\tgene_ID_2\tgene_name_2\tmirbase_premirna_accession_2\ttranscript_name_2\tWGD\tCLG" >> $@;
+	cat tmp2 >> $@;
+	rm tmp*
+
+
+
+	

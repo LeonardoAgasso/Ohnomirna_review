@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+
+# grep but for fasta file: check for correspondence with the pattern in the header and return the sequence
+# usage: python3 fastagrep <fasta_file> <pattern>
+# return all the lines after the header, until the next header
+
+# provide the helper with the --help (or -h) option
+if sys.argv[1] == '--help' or sys.argv[1] == '-h':
+    print('usage: fastagrep <fasta_file> <pattern>')
+    print('Grep but for fasta file: check for correspondence with the pattern in the header')
+    sys.exit()
+
+
+def grep_fasta(fasta_file, pattern):
+    with open(fasta_file, 'r') as f:
+        for line in f:
+            if line.startswith('>'):
+                if pattern in line:
+                    print(line.strip())
+                    for line in f:
+                        if line.startswith('>'):
+                            break
+                        else:
+                            print(line.strip())
+                else:
+                    for line in f:
+                        if line.startswith('>'):
+                            break
+            else:
+                continue
+
+
+if __name__ == '__main__':
+    grep_fasta(sys.argv[1], sys.argv[2])
+
+    

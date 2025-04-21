@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# Usage: ./tidyMakefile.sh <string> <directory>
+# create a makefile in the given directory (rules) and a symbolic link to it (makefile) in the current directory
+
+if [ $# -ne 2 ]; then
+    echo "Error: wrong number of arguments."
+    echo "Usage: ./tidyMakefile.sh <string> <directory>"
+    exit 1
+fi
+
+if [ ! -n "$1" ]; then
+    echo "Error: first argument must be a string"
+    echo "Usage: ./tidyMakefile.sh <string> <directory>"
+    exit 1
+fi
+
+if [ ! -d "$2" ]; then
+    echo "Error: second argument must be an existing directory"
+    echo "Usage: ./tidyMakefile.sh <string> <directory>"    
+    exit 1
+fi
+
+touch "$2/makefile.$1"
+ln -s $2/makefile.$1 makefile

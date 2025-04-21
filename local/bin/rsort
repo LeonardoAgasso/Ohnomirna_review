@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+import sys
+
+def hsort():
+    try:
+        for line in sys.stdin:
+            fields = line.strip().split('\t')
+            if len(fields) >= 2:
+                first, second = fields[0], fields[1]
+                if first < second:
+                    print(f"{first}\t{second}")
+                else:
+                    print(f"{second}\t{first}")
+            else:
+                # Print the line as it is if it doesn't have at least two fields
+                print(line.strip())
+    except BrokenPipeError:
+        # Ignore broken pipe errors
+        pass
+
+if __name__ == "__main__":
+    hsort()

@@ -1,0 +1,3 @@
+scp lagasso@192.168.186.10:OhnomiRNAs/dataset/6_MotifsEnrichment/test_bifan_pval/putative_intragenic_ohnomirna_pairs.z-score_1k.tsv ./putative_intragenic_ohnomirna_pairs.z-score_1k.tsv
+scp lagasso@192.168.186.10:OhnomiRNAs/dataset/6_MotifsEnrichment/test_bifan_pval/ensembl_paralogous_miRNA_pairs.z-score_1k.tsv ./ensembl_paralogous_miRNA_pairs.z-score_1k.tsv
+scp lagasso@192.168.186.10:OhnomiRNAs/dataset/6_MotifsEnrichment/test_bifan_pval/random_mirna_pairs.z-score_1k.tsv ./random_mirna_pairs.z-score_1k.tsv
