@@ -1,0 +1,8 @@
+.DELETE_ON_ERROR:
+
+
+hsa_mirgenedb3.0_to_everything.tsv:
+	ln -s ../0_miRNA_parsing/$@ ./$@
+
+hsa_mirgenedb3.0_to_everything.mirna_origin.tsv: hsa_mirgenedb3.0_to_everything.tsv
+	cat $< | strip_mirna_name -p 1 | lookup_mgdb_mirna_origin 1 | strip_mirna_name -r 1 > $@
