@@ -16,7 +16,7 @@ COUNT_SCRIPT := BifanCounter
 ######################################################
 
 ####################### Paths ########################
-NM_PATH_PIGEN = ../../../null_models_10k/
+NM_PATH = ../../../null_models_10k/
 OUTPUT_DIR = ./output/
 COUNTS_OUTPUT_DIR = ./counts/
 DATASET_PATH = ../../../OhnomiRNAs/dataset/
@@ -43,7 +43,7 @@ gene_pairs.name.tsv:
 ######################################################
 
 
-#################### single miRNA ####################
+#################### miRNA pairs ####################
 ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv:
 	ln -s ../../2_find_WGD_intragenic/$@ ./$@
 

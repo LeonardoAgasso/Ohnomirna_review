@@ -1,2 +1,80 @@
 .DELETE_ON_ERROR:
 
+
+####################### VARS ########################
+OM_PAIRS = ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.names_only.tsv
+PM_PAIRS = all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv
+OHNOLOGS = ohnologs.gene_pairs.name.tsv
+PARALOGS = paralogs.gene_pairs.name.tsv
+ALL_DUPLICATED = gene_pairs.name.tsv
+NETWORKS = tarbase mirdip
+NETW_EDGELISTS = $(foreach ntwk, $(NETWORKS), $(addsuffix .gene.edge, $(ntwk))) $(foreach ntwk, $(NETWORKS), $(addsuffix .gene.mgdb_filtered.edge, $(ntwk)))
+N_NM = 1000
+PARALLEL_SCRIPTS_CORES := 75
+SCRIPT := VmotifFinderPar $(PARALLEL_SCRIPTS_CORES)
+COUNT_SCRIPT := BifanCounter
+######################################################
+
+####################### Paths ########################
+NM_PATH = ../../../null_models_10k/
+OUTPUT_DIR = ./output/
+COUNTS_OUTPUT_DIR = ./counts/
+DATASET_PATH = ../../../OhnomiRNAs/dataset/
+PPI_PARS_FOLDER = $(DATASET_PATH)PPI_parsing/
+NTWK_PATH = $(DATASET_PATH)Network_parsing/
+NTWK_TB_PATH = $(NTWK_PATH)tarbase/
+NTWK_MDT_PATH = $(NTWK_PATH)mirdip/
+GENE_PAIRS_DIR = $(DATASET_PATH)gene_pairs/
+######################################################
+
+
+##################### Gene pairs #####################
+ohnologs.gene_pairs.name.tsv:
+	ln -s $(GENE_PAIRS_DIR)$@ ./$@
+
+paralogs.gene_pairs.name.tsv:
+	ln -s $(GENE_PAIRS_DIR)$@ ./$@
+
+paralogs.gene_pairs.name.cut.tsv:
+	ln -s $(GENE_PAIRS_DIR)$@ ./$@
+
+gene_pairs.name.tsv:
+	ln -s $(GENE_PAIRS_DIR)$@ ./$@
+
+ohnologs.single_genes.tsv: ohnologs.gene_pairs.name.tsv
+	cat $< | awk -F"\t" '{print $$1"\n"$$2}' | sort | uniq > $@
+
+paralogs.single_genes.tsv: paralogs.gene_pairs.name.tsv
+	cat $< | awk -F"\t" '{print $$1"\n"$$2}' | sort | uniq > $@
+######################################################
+
+
+#################### miRNA pairs ####################
+ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv:
+	ln -s ../../2_find_WGD_intragenic/$@ ./$@
+
+all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.tsv:
+	ln -s ../../4_find_SSD_intragenic/$@ ./$@
+
+ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.names_only.tsv: ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv
+	cat $< | awk -F"\t" '{print $$3"\t"$$10}' | sort | uniq | rsort > $@
+
+all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv: all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.tsv
+	cat $< | awk -F"\t" '{print $$8"\t"$$16}' | sort | uniq | awk -F"\t" 'NR>1' | rsort > $@
+######################################################
+
+
+####################### Networks #####################
+%.gene.edge:
+	ln -s $(NTWK_PATH)$*/$@ ./$@
+######################################################
+
+
+####################### Output #######################
+%_om.z_$(N_NM).tsv: %.gene.edge $(OM_PAIRS)
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+
+%_pm.z_$(N_NM).tsv: %.gene.edge $(PM_PAIRS)
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+######################################################
+

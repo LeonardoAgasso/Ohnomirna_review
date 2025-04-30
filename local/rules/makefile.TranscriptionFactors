@@ -1,0 +1,17 @@
+.DELETE_ON_ERROR:
+
+Escores.txt.zip:
+	wget 'https://cisbp.ccbr.utoronto.ca/data/3_00/DataFiles/Bulk_downloads/EntireDataset/Escores.txt.zip'
+
+Escores.txt: Escores.txt.zip
+	unzip $<
+
+%.degree: %.txt.gz %.net
+	bawk '{print $$DBID, $$Motif_ID}' $< | translate -a -d -j -v -f 2 $(word 2,$^) 2 | bawk '$$1!=$$3' | reorder_edge 1 3 | cut -f 1,3 | sort | uniq | cut -f 1 | sort | uniq -c | sort -k1,1nr > $@
+
+%.net: %.txt.gz
+	bawk '{print $$DBID, $$Motif_ID}' $< > $@
+
+%.net_TF: %.net
+	bawk '{print $$DBID, $$Motif_ID}' $< | translate -a -d -j -v -f 2 $< 2 | bawk '$$1!=$$3' | reorder_edge 1 3 | cut -f 1,3 | sort | uniq > $@
+

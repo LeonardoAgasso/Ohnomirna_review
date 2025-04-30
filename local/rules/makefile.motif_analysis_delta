@@ -88,11 +88,31 @@ all_hsa_ensembl_singles_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.
 
 
 
-####################### Output #######################
+####################### Output PREPPI #######################
 %_om.z_$(N_NM).preppi.tsv: %.gene.edge $(OM_SINGLES) $(OHNOLOGS) $(PREPPI_INT)  
 	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 
-%_pm.z_$(N_NM).preppi.tsv: %.gene.edge $(PM_SINGLES) $(OHNOLOGS) $(PREPPI_INT)  
+%_om_mixed.z_$(N_NM).preppi.tsv: %.gene.edge $(OM_SINGLES) $(PARALOGS) $(PREPPI_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+
+%_pm.z_$(N_NM).preppi.tsv: %.gene.edge $(PM_SINGLES) $(PARALOGS) $(PREPPI_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+
+%_pm_mixed.z_$(N_NM).preppi.tsv: %.gene.edge $(PM_SINGLES) $(OHNOLOGS) $(PREPPI_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+######################################################
+
+####################### Output STRING #######################
+%_om.z_$(N_NM).string.tsv: %.gene.edge $(OM_SINGLES) $(OHNOLOGS) $(STRING_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+
+%_om_mixed.z_$(N_NM).string.tsv: %.gene.edge $(OM_SINGLES) $(PARALOGS) $(STRING_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+
+%_pm.z_$(N_NM).string.tsv: %.gene.edge $(PM_SINGLES) $(PARALOGS) $(STRING_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+
+%_pm_mixed.z_$(N_NM).string.tsv: %.gene.edge $(PM_SINGLES) $(OHNOLOGS) $(STRING_INT)  
 	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 ######################################################
 

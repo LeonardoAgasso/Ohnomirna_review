@@ -7,3 +7,11 @@
 **/*.gff
 **/*.dat
 **/*tmp*
+**/*.net
+**/*.net_TF
+**/*.gz
+**/*tmp
+**/*.degree
+**/*.zip
+**/*.edge
+**/pippo
