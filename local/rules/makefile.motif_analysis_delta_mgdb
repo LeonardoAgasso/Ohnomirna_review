@@ -3,7 +3,7 @@
 
 ####################### VARS ########################
 OM_SINGLES = ohnomirna_singles_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.names_only.tsv
-PM_SINGLES = all_hsa_ensembl_singles_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv
+PM_SINGLES =  mgdb_3_hsa.premirna_paralog_singles.extended_info.host_gene.names_only.tsv
 OHNOLOGS = ohnologs.gene_pairs.name.tsv
 PARALOGS = paralogs.gene_pairs.name.tsv
 PREPPI_INT = preppi.human_af.interactome.exp_ver.translated.clean.tsv
@@ -65,6 +65,9 @@ ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.
 all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.tsv:
 	ln -s ../../4_find_SSD_intragenic/$@ ./$@
 
+mgdb_3_hsa.premirna_paralog_pairs.extended_info.host_gene.tsv:
+	ln -s ../../4_find_SSD_intragenic/$@ ./$@
+
 ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.names_only.tsv: ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv
 	cat $< | awk -F"\t" '{print $$3"\t"$$10}' | sort | uniq | rsort > $@
 
@@ -76,6 +79,12 @@ ohnomirna_singles_predict_Hsa_existent.names.extended_info.flagged_WGD_host_gene
 
 all_hsa_ensembl_singles_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv: all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv
 	cat $< | awk -F"\t" '{print $$1"\n"$$2}' | sort | uniq | rsort > $@
+
+mgdb_3_hsa.premirna_paralog_pairs.extended_info.host_gene.names_only.tsv: mgdb_3_hsa.premirna_paralog_pairs.extended_info.host_gene.tsv
+	cat $< | awk -F"\t" 'NR>1' | awk -F"\t" '{print $$3"\t"$$10}' | rsort | sort | uniq > $@
+
+mgdb_3_hsa.premirna_paralog_singles.extended_info.host_gene.names_only.tsv: mgdb_3_hsa.premirna_paralog_pairs.extended_info.host_gene.names_only.tsv
+	cat $< | awk -F"\t" '{print $$1"\n"$$2}' | grep -v gene_name | sort | uniq | rsort > $@
 ######################################################
 
 
