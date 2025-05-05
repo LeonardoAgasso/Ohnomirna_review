@@ -1,0 +1,1 @@
+../../local/rules/makefile.motif_analyisis_bifan_mgdb

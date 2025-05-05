@@ -2,8 +2,8 @@
 
 
 ####################### VARS ########################
-OM_PAIRS = ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.names_only.tsv
-PM_PAIRS = all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv
+OM_SINGLES = ohnomirna_singles_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.names_only.tsv
+PM_SINGLES = all_hsa_ensembl_singles_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv
 OHNOLOGS = ohnologs.gene_pairs.name.tsv
 PARALOGS = paralogs.gene_pairs.name.tsv
 PREPPI_INT = preppi.human_af.interactome.exp_ver.translated.clean.tsv
@@ -12,14 +12,13 @@ ALL_DUPLICATED = gene_pairs.name.tsv
 NETWORKS = tarbase mirdip
 NETW_EDGELISTS = $(foreach ntwk, $(NETWORKS), $(addsuffix .gene.edge, $(ntwk))) $(foreach ntwk, $(NETWORKS), $(addsuffix .gene.mgdb_filtered.edge, $(ntwk)))
 N_NM = 1000
-PARALLEL_SCRIPTS_CORES := 75
-SCRIPT_HOM_PPI := BifanFinderPar_ppi $(PARALLEL_SCRIPTS_CORES)
-COUNT_SCRIPT := BifanCounter
+PARALLEL_SCRIPTS_CORES := 90
+SCRIPT := LambdaFinderPar_ppi $(PARALLEL_SCRIPTS_CORES)
 STRING_MIN_SCORE := 960
 ######################################################
 
 ####################### Paths ########################
-NM_PATH = ../../../null_models_10k/
+NM_PATH_PIGEN = ../../../null_models_10k/
 OUTPUT_DIR = ./output/
 COUNTS_OUTPUT_DIR = ./counts/
 DATASET_PATH = ../../../OhnomiRNAs/dataset/
@@ -59,7 +58,7 @@ gene_pairs.name.tsv:
 ######################################################
 
 
-#################### single miRNA ####################
+##################### miRNA pairs ####################
 ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv:
 	ln -s ../../2_find_WGD_intragenic/$@ ./$@
 
@@ -71,6 +70,12 @@ ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.
 
 all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv: all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.tsv
 	cat $< | awk -F"\t" '{print $$8"\t"$$16}' | sort | uniq | awk -F"\t" 'NR>1' | rsort > $@
+
+ohnomirna_singles_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.names_only.tsv: ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.names_only.tsv
+	cat $< | awk -F"\t" '{print $$1"\n"$$2}' | grep -v gene_name | sort | uniq | rsort > $@
+
+all_hsa_ensembl_singles_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv: all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_only.tsv
+	cat $< | awk -F"\t" '{print $$1"\n"$$2}' | sort | uniq | rsort > $@
 ######################################################
 
 
@@ -84,29 +89,30 @@ all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_on
 
 
 ####################### Output PREPPI #######################
-%_om.z_$(N_NM).preppi.tsv: %.gene.edge $(OM_PAIRS) $(OHNOLOGS) $(PREPPI_INT)
-	cat $(word 1, $^) | $(SCRIPT_HOM_PPI) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+%_om.z_$(N_NM).preppi.tsv: %.gene.edge $(OM_SINGLES) $(OHNOLOGS) $(PREPPI_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 
-%_om_mixed.z_$(N_NM).preppi.tsv: %.gene.edge $(OM_PAIRS) $(PARALOGS) $(PREPPI_INT)
-	cat $(word 1, $^) | $(SCRIPT_HOM_PPI) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+%_om_mixed.z_$(N_NM).preppi.tsv: %.gene.edge $(OM_SINGLES) $(PARALOGS) $(PREPPI_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 
-%_pm.z_$(N_NM).preppi.tsv: %.gene.edge $(PM_PAIRS) $(PARALOGS) $(PREPPI_INT)
-	cat $(word 1, $^) | $(SCRIPT_HOM_PPI) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+%_pm.z_$(N_NM).preppi.tsv: %.gene.edge $(PM_SINGLES) $(PARALOGS) $(PREPPI_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 
-%_pm_mixed.z_$(N_NM).preppi.tsv: %.gene.edge $(PM_PAIRS) $(OHNOLOGS) $(PREPPI_INT)
-	cat $(word 1, $^) | $(SCRIPT_HOM_PPI) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+%_pm_mixed.z_$(N_NM).preppi.tsv: %.gene.edge $(PM_SINGLES) $(OHNOLOGS) $(PREPPI_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 ######################################################
 
 ####################### Output STRING #######################
-%_om.z_$(N_NM).string.tsv: %.gene.edge $(OM_PAIRS) $(OHNOLOGS) $(STRING_INT)
-	cat $(word 1, $^) | $(SCRIPT_HOM_PPI) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+%_om.z_$(N_NM).string.tsv: %.gene.edge $(OM_SINGLES) $(OHNOLOGS) $(STRING_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 
-%_om_mixed.z_$(N_NM).string.tsv: %.gene.edge $(OM_PAIRS) $(PARALOGS) $(STRING_INT)
-	cat $(word 1, $^) | $(SCRIPT_HOM_PPI) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+%_om_mixed.z_$(N_NM).string.tsv: %.gene.edge $(OM_SINGLES) $(PARALOGS) $(STRING_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 
-%_pm.z_$(N_NM).string.tsv: %.gene.edge $(PM_PAIRS) $(PARALOGS) $(STRING_INT)
-	cat $(word 1, $^) | $(SCRIPT_HOM_PPI) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+%_pm.z_$(N_NM).string.tsv: %.gene.edge $(PM_SINGLES) $(PARALOGS) $(STRING_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 
-%_pm_mixed.z_$(N_NM).string.tsv: %.gene.edge $(PM_PAIRS) $(OHNOLOGS) $(STRING_INT)
-	cat $(word 1, $^) | $(SCRIPT_HOM_PPI) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
+%_pm_mixed.z_$(N_NM).string.tsv: %.gene.edge $(PM_SINGLES) $(OHNOLOGS) $(STRING_INT)  
+	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(word 4, $^) $(NM_PATH_PIGEN)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 ######################################################
+

@@ -7,3 +7,6 @@ hsa-tissueItems.txt:
 
 hsa-tissueItems.tsv: hsa-tissueItems.txt
 	sed 's/,/\t/g' $< > $@
+
+hsa-tissueItems_clean.tsv: hsa-tissueItems.tsv
+	awk 'NR==1{print;next} {if ($2 != "") print}' $< > $@
