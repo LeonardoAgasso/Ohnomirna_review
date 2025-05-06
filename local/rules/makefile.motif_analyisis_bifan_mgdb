@@ -10,7 +10,7 @@ ALL_DUPLICATED = gene_pairs.name.tsv
 NETWORKS = tarbase mirdip
 NETW_EDGELISTS = $(foreach ntwk, $(NETWORKS), $(addsuffix .gene.edge, $(ntwk))) $(foreach ntwk, $(NETWORKS), $(addsuffix .gene.mgdb_filtered.edge, $(ntwk)))
 N_NM = 1000
-PARALLEL_SCRIPTS_CORES := 75
+PARALLEL_SCRIPTS_CORES := 50
 SCRIPT := BifanFinderPar_new $(PARALLEL_SCRIPTS_CORES)
 COUNT_SCRIPT := BifanCounter
 ######################################################

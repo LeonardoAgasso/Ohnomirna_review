@@ -1,0 +1,38 @@
+.DELETE_ON_ERROR:
+
+
+TF_Information_all_motifs_plus_direct.tsv:
+	cat TF_Information_all_motifs_plus.txt | awk -F"\t" '$$9=="D" || $$9=="TF_Status"' > $@
+
+TF_Information_all_motifs_plus_indirect.tsv:
+	cat TF_Information_all_motifs_plus.txt | awk -F"\t" '$$9=="I" || $$9=="TF_Status"' > $@
+
+TF_Information_all_motifs_direct.tsv:
+	cat TF_Information_all_motifs.txt | awk -F"\t" '$$9=="D" || $$9=="TF_Status"' > $@
+
+TF_Information_all_motifs_indirect.tsv:
+	cat TF_Information_all_motifs.txt | awk -F"\t" '$$9=="I" || $$9=="TF_Status"' > $@
+
+TF_Information_direct.tsv:
+	cat TF_Information.txt | awk -F"\t" '$$9=="D" || $$9=="TF_Status"' > $@
+
+TF_Information_indirect.tsv:
+	cat TF_Information.txt | awk -F"\t" '$$9=="I" || $$9=="TF_Status"' > $@
+
+
+
+%.tsv:
+	cat $*.txt > $@
+
+
+
+# generate the TF --> motif adjacency list
+%.edge: %.tsv
+	cat $< | awk -F"\t" '{print $$6"\t"$$4}' | sort | uniq > $@
+
+
+# generate the TF --> TF adjacency list
+%.projected.edge: %.edge
+	cat $< | awk -F"\t" '{print $$2"\t"$$1}' | sort | uniq | awk -F"\t" '$$1!="."' > dic;
+	cat $< | translate -a -d -j -v -e ABSENT dic 2 | grep -v ABSENT | awk -F"\t" '$$1!=$$3' | cut -f 1,3 | rsort | sort | uniq > $@;
+	rm dic

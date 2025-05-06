@@ -1,10 +1,13 @@
 **/*.dic
 **/*.tsv
+**/*.csv
 **/*.gff
 **/*.bed
 **/*.gff3
 **/*.fa
 **/*.gff
+**/*.txt
+**/*.png
 **/*.dat
 **/*tmp*
 **/*.net
@@ -15,3 +18,4 @@
 **/*.zip
 **/*.edge
 **/pippo
+**/dic
