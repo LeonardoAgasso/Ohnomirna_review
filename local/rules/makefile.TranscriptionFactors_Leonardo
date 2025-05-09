@@ -1,6 +1,24 @@
 .DELETE_ON_ERROR:
 
+GENCODE_RELEASE=48
 
+
+# Gencode parsing
+gencode_data.gff3:
+	wget -O $@.gz 'https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_$(GENCODE_RELEASE)/gencode.v$(GENCODE_RELEASE).annotation.gff3.gz';
+	gunzip $@.gz;
+
+gencode.genes.tsv: gencode_data.gff3
+	cat $< | awk -F"\t" 'NR>4 && $$3=="gene"' | everygff2tab.py -g GFF3 gene_id gene_type gene_name hgnc_id havana_gene |\
+	awk -F"\t" -v OFS="\t" 'gsub(/\.[0-9]+/, "", $$9)' |\
+	awk -F"\t" '{print $$9"\t"$$1"\t"$$4"\t"$$5"\t"$$7"\t"$$10"\t"$$11"\t"$$12}' | sort | uniq > $@
+
+gencode.genes.dic: gencode.genes.tsv
+	cat $< | awk -F"\t" '{print $$1"\t"$$7}' | sort | uniq > $@
+#
+
+
+# TF parsing
 TF_Information_all_motifs_plus_direct.tsv:
 	cat TF_Information_all_motifs_plus.txt | awk -F"\t" '$$9=="D" || $$9=="TF_Status"' > $@
 
@@ -19,12 +37,10 @@ TF_Information_direct.tsv:
 TF_Information_indirect.tsv:
 	cat TF_Information.txt | awk -F"\t" '$$9=="I" || $$9=="TF_Status"' > $@
 
-
-
 %.tsv:
 	cat $*.txt > $@
 
-
+#
 
 # generate the TF --> motif adjacency list
 %.edge: %.tsv
@@ -36,3 +52,7 @@ TF_Information_indirect.tsv:
 	cat $< | awk -F"\t" '{print $$2"\t"$$1}' | sort | uniq | awk -F"\t" '$$1!="."' > dic;
 	cat $< | translate -a -d -j -v -e ABSENT dic 2 | grep -v ABSENT | awk -F"\t" '$$1!=$$3' | cut -f 1,3 | rsort | sort | uniq > $@;
 	rm dic
+
+%.projected.gene.edge: %.projected.edge gencode.genes.dic
+	cat $(word 1, $^) | translate -a -d -j -v -e ABSENT $(word 2, $^) 1 |\
+	translate -a -d -j -v -e ABSENT $(word 2, $^) 3 | cut -f2,4 | grep -v ABSENT | rsort | sort | uniq > $@
