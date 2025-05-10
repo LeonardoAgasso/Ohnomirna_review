@@ -70,15 +70,9 @@ all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mribase_info.host_gene.names_on
 
 
 ####################### Output #######################
-%_om.z_$(N_NM).tsv: %.gene.edge $(OM_PAIRS) $(OHNOLOGS)
+%_om.z_$(N_NM).tsv: %.gene.edge $(OM_PAIRS) $(TF)
 	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 
-%_om_mixed.z_$(N_NM).tsv: %.gene.edge $(OM_PAIRS) $(PARALOGS)
-	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
-
-%_pm.z_$(N_NM).tsv: %.gene.edge $(PM_PAIRS) $(PARALOGS)
-	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
-
-%_pm_mixed.z_$(N_NM).tsv: %.gene.edge $(PM_PAIRS) $(OHNOLOGS)
+%_pm.z_$(N_NM).tsv: %.gene.edge $(PM_PAIRS) $(TF)
 	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 ######################################################
