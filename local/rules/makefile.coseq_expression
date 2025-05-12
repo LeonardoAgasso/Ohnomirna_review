@@ -1,0 +1,10 @@
+.DELETE_ON_ERROR:
+
+hsa_mirgenedb3.0_to_everything.tsv:
+	ln -s ../0_miRNA_parsing/$@ ./$@
+
+mature_to_mgdb.dic: hsa_mirgenedb3.0_to_everything.tsv
+	cat $< | awk -F"\t" '{print $$14"\t"$$1}' | sort | uniq > $@
+
+smallseq_counts_mgdb.tsv: mature_to_mgdb.dic
+	cat smallseq_counts.tsv | translate -a -d -j -v -e unknown_mirna $(word 1, $^) 1 | strip_mirna_name 2 > $@
