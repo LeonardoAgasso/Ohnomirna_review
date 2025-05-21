@@ -3,8 +3,8 @@ import sys
 import re
 
 def clean_mirna_name(name):
-    # Remove _pre and -vN_pre (case-insensitive)
-    return re.sub(r'(-v\d+)?_pre$', '', name, flags=re.IGNORECASE)
+    # Remove _pri _pre and -vN_pre (case-insensitive)
+    return re.sub(r'(-v\d+)?_pre$|_pri$', '', name, flags=re.IGNORECASE)
 
 def main():
     if len(sys.argv) != 2:

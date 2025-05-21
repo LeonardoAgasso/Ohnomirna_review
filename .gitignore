@@ -17,5 +17,7 @@
 **/*.degree
 **/*.zip
 **/*.edge
+**/*.parquet
+**/*.h5ad
 **/pippo
 **/dic

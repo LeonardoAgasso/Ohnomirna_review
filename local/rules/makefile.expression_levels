@@ -9,4 +9,7 @@ hsa-tissueItems.tsv: hsa-tissueItems.txt
 	sed 's/,/\t/g' $< > $@
 
 hsa-tissueItems_clean.tsv: hsa-tissueItems.tsv
-	awk 'NR==1{print;next} {if ($2 != "") print}' $< > $@
+	cat $< | awk -F"\t" 'NR==1' > header;
+	cat $< | awk -F"\t" 'NR>1' | strip_mirna_name 1 | sort | uniq > $@.noheader;
+	cat header $@.noheader > $@;
+	rm $@.noheader header
