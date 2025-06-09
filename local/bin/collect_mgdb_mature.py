@@ -10,8 +10,8 @@ def parse_args():
     return sys.argv[1]
 
 def clean_mature_name(mature_name):
-    # Remove suffixes like _3p, _5p, _3p*, _5p*
-    return re.sub(r'(_[35]p\*?)$', '', mature_name)
+    pattern = re.compile(r'(?:-v\d+)?(?:-|_)[35]p\*?$')
+    return pattern.sub('', mature_name)
 
 def load_mature_miRNAs(filename):
     mature_map = {}
