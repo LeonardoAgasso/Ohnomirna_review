@@ -24,7 +24,10 @@ for line in sys.stdin:
 	line = line.rstrip()
 	fields = line.split("\t")
 
-	# Check if the miRNA gene pair is in the network, otherwise print an error message and continue
+	if len(fields) != 2:
+		print("Line \"{lsine}\" does not contain exactly two fields")
+		continue
+	
 	if fields[0] not in G.nodes() and fields[1] in G.nodes():
 		print(fields[0] + "\t" + fields[1] + "\tNA\terr_1")
 		continue
