@@ -1,0 +1,36 @@
+.DELETE_ON_ERROR:
+.DEFAULT_GOAL := all
+.PHONY: clean all
+
+NETWORK = mirdip
+NETWORK_PARS_PATH = ../../OhnomiRNAs/dataset/Network_parsing/$(NETWORK)
+
+SEED_MER = 7mer
+SEED_SCORE = 1 2 3 4 5 6 7 8 9 10
+
+
+# Import network files
+$(NETWORK).gene.edge:
+	ln -s $(NETWORK_PARS_PATH)/$@ ./$@
+
+
+# Import duplicated miRNA files
+ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv:
+	ln -s ../2_find_WGD_intragenic/$@ ./$@
+
+mgdb_3_hsa.premirna_paralog_pairs.extended_info.tsv:
+	ln -s ../3_retrieve_Hsa_paralogs/$@ ./$@
+
+all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mirbase_info.tsv:
+	ln -s ../3_retrieve_Hsa_paralogs/$@ ./$@
+
+
+sd.mgdb_ohnomirna.tsv: ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv $(NETWORK).gene.edge
+	cat $(word 1, $^) | awk -F"\t" '{print $$3"\t"$$10}' | sd_miRNAgenes.py $(word 2, $^) >$@
+
+sd.mgdb_paralogmirna.tsv: mgdb_3_hsa.premirna_paralog_pairs.extended_info.tsv $(NETWORK).gene.edge
+	cat $(word 1, $^) | awk -F"\t" '{print $$3"\t"$$8}' | sd_miRNAgenes.py $(word 2, $^) >$@
+
+sd.ensembl_paralogmirna.tsv: all_hsa_ensembl_paralogmirna_clean.mirgenedb_and_mirbase_info.tsv $(NETWORK).gene.edge
+	cat $(word 1, $^) | awk -F"\t" '{print $$5"\t"$$10}' | sd_miRNAgenes.py $(word 2, $^) >$@
+
