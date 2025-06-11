@@ -22,6 +22,12 @@ mgdb_3_$(SPECIES).WGD_intragenic.tsv: ohnomirna_pairs_predict_Hsa_existent.names
 	cat $< | grep -v intergenic | grep -v not_related | awk -F"\t" '{print $$1"\t"$$8}' | sort | uniq > $@
 
 
+# old results
+ohnomirna_paralogmirna.ssdmirna_wgdmirna_ensembl_check.7mer_s5_align_scores.tarbase_flag.strand_check.tarbase_sd.mirdip_top_sd.mirdip_complete_sd.rbh_ssd.tsv:
+	ln -s ../../OhnomiRNAs/dataset/6_ReciprocalBestHits/$@ ./$@
+
+ohnomirna_paralogmirna.ssdmirna_wgdmirna_ensembl_check.7mer_s5_align_scores.tarbase_flag.strand_check.tarbase_sd.mirdip_top_sd.mirdip_complete_sd.rbh_wgd.tsv:
+	ln -s ../../OhnomiRNAs/dataset/6_ReciprocalBestHits/$@ ./$@
 
 
 mgdb_3_$(SPECIES).premirna_paralog_pairs.extended_info.tsv:
