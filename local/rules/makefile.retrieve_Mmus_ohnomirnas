@@ -26,7 +26,7 @@ $(ORG)_mirbase_mirna_primary_transcript.gff3: $(ORG)_mirbase.gff3
 $(ORG)_mirbase_mirna.tsv: $(ORG)_mirbase_mirna.gff3
 	cat $< | everygff2tab -g GFF3 ID Alias Name Derives_from > $@
 
-$(ORG)_mirbase_mirna_primary_transcript.tsv: $(ORG)_mirbase_mirna_primary_transcript
+$(ORG)_mirbase_mirna_primary_transcript.tsv: $(ORG)_mirbase_mirna_primary_transcript.gff3
 	cat $< | everygff2tab -g GFF3 ID Alias Name > $@
 
 $(ORG)_mirbase_primary_transcript_id_name.dic: $(ORG)_mirbase_mirna_primary_transcript.tsv
