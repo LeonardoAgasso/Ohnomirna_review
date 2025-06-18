@@ -1,7 +1,7 @@
 .DELETE_ON_ERROR:
 
-ORG_CAP := Gga
-ORG := gga
+ORG_CAP := Aca
+ORG := aca
 MIRGENEDB_VERSION := 3.0
 
 gnathostomata_ohnolog_reference.tsv:
