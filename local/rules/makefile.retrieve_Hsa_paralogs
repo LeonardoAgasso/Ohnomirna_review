@@ -10,7 +10,7 @@ $(ORG)_mirgenedb$(MIRGENEDB_VERSION)_to_everything.tsv:
 	ln -s ../0_miRNA_parsing/$@ ./$@
 
 mgdb_3_$(ORG).premirna.tsv:
-	ln -s ../1_retrieve_$(ORG_CAP)_ohnomirnas/$@ ./$@
+	ln -s ../1.1_retrieve_$(ORG_CAP)_ohnomirnas/$@ ./$@
 
 mgdb_3_$(ORG).premirna_names.tsv: mgdb_3_$(ORG).premirna.tsv
 	cat $< | awk -F"\t" '{print $$9}' | strip_mirna_name 1 | sort | uniq > $@
