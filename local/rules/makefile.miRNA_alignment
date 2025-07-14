@@ -13,7 +13,7 @@ mirgenedb$(MIRGENEDB_VERSION)_$(SPECIES).mature_mirna.names_list.tsv:
 	ln -s ../0_miRNA_parsing/$@ ./$@
 
 ohnomirna_pairs_predict_Hsa_existent.mgdb.tsv:
-	ln -s ../1_retrieve_Hsa_ohnomirnas/$@ ./$@
+	ln -s ../1.1_retrieve_Hsa_ohnomirnas/$@ ./$@
 
 ohnomirna_pairs_predict_Hsa_existent.names.extended_info.flagged_WGD_host_genes.tsv:
 	ln -s ../2_find_WGD_intragenic/$@ ./$@

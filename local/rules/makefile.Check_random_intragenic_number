@@ -1,0 +1,15 @@
+.DELETE_ON_ERROR:
+
+
+mgdb_3_hsa.premirna.bed:
+	ln -s ../2_find_WGD_intragenic/$@ ./$@
+
+gencode.protein_coding_genes.bed:
+	ln -s ../2_find_WGD_intragenic/$@ ./$@
+
+
+gencode.protein_coding_genes.hosting_miRNAs.tsv: gencode.protein_coding_genes.bed mgdb_3_hsa.premirna.bed
+	bedtools intersect -wb -a gencode.protein_coding_genes.bed -b mgdb_3_hsa.premirna.bed > $@
+
+
+# 217 protein-coding genes out of 20,092 host (at least) one miRNA

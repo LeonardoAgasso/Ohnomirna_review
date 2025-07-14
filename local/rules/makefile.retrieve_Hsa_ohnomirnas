@@ -26,7 +26,7 @@ $(ORG)_mirbase_mirna_primary_transcript.gff3: $(ORG)_mirbase.gff3
 $(ORG)_mirbase_mirna.tsv: $(ORG)_mirbase_mirna.gff3
 	cat $< | everygff2tab -g GFF3 ID Alias Name Derives_from > $@
 
-$(ORG)_mirbase_mirna_primary_transcript.tsv: $(ORG)_mirbase_mirna_primary_transcript
+$(ORG)_mirbase_mirna_primary_transcript.tsv: $(ORG)_mirbase.gff3
 	cat $< | everygff2tab -g GFF3 ID Alias Name > $@
 
 $(ORG)_mirbase_primary_transcript_id_name.dic: $(ORG)_mirbase_mirna_primary_transcript.tsv
@@ -76,6 +76,12 @@ ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.extended_info.tsv: ohnomirna_p
 	cat tmp2 >> $@;
 	rm tmp*
 
+ohnomirna_mgdb_to_gene.dic: ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.extended_info.tsv
+	cat $< | awk -F"\t" 'NR>1 {print $$1"\t"$$3"\n"$$6"\t"$$8}' | sort | uniq > $@
 
+gnathostomata_ohnolog_reference_singlecol.tsv: gnathostomata_ohnolog_reference.tsv
+	awk -F"\t" 'NR>1 { for(i=1; i<=4; i++) if($$i != "absent_loc") print $$i, (i==1?"1alpha":(i==2?"2alpha":(i==3?"1beta":"2beta"))), $$7 }' $< > $@
 
-	
+gnathostomata_ohnolog_reference_singlecol.gene.tsv: gnathostomata_ohnolog_reference_singlecol.tsv ohnomirna_mgdb_to_gene.dic
+	cat $(word 1, $^) | awk -F" " '{print "Hsa-"$$1"\t"$$2"\t"$$3}' | translate -a -d -j -v -e MISSING $(word 2, $^) 1 | cut -f1 --complement | sort | uniq > $@
+
