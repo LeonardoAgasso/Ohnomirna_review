@@ -19,5 +19,8 @@
 **/*.edge
 **/*.parquet
 **/*.h5ad
+**/*.png
+**/*.jpg
+**/*.pdf
 **/pippo
 **/dic
