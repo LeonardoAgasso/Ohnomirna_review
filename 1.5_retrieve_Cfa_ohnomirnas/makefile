@@ -1,1 +1,0 @@
-../local/rules/makefile.retrieve_Gga_ohnomirnas
