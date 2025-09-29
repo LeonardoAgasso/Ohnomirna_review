@@ -40,11 +40,20 @@ TF_Information_indirect.tsv:
 %.tsv:
 	cat $*.txt > $@
 
+wgd_bifan.tarbase.list.tsv:
+	ln -s ../motif_lists/$@ $@
+
+wgd_tf_bifan.tarbase.list.tsv: wgd_bifan.tarbase.list.tsv tf_list.tsv
+	cat $(word 1, $^) | filter_1col 3 $(word 2, $^) | filter_1col 4 $(word 2, $^) | sort | uniq > $@
+
 #
 
 # generate the TF --> motif adjacency list
 %.edge: %.tsv
 	cat $< | awk -F"\t" '{print $$6"\t"$$4}' | sort | uniq > $@
+
+tf_list.tsv: TF_Information_all_motifs_plus.txt
+	cat $< | cut -f7 | sort | uniq > $@
 
 
 # generate the TF --> TF adjacency list
