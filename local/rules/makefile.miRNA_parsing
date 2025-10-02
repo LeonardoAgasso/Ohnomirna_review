@@ -272,7 +272,7 @@ gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix
 
 
 gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.man_fix_2.tsv: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.tsv
-	cat $(word 1, $^) ./corrections/manual_correction_2.tsv > $@
+	cat $(word 1, $^) ./corrections/manual_corrections_2.tsv > $@
 
 $(SPECIES)_mirgenedb$(MIRGENEDB_VERSION)_to_everything.tsv: gencode.mirna_genes_transcripts.ensembl_transcript_mirbaseID.gene_ID_key.man_fix.mature_miRNAs_jlo.mirgenedb_flag_premirna.man_fix_2.tsv
 	cat $< | awk -F"\t" '{print $$14"\t"$$0}' | cut -f15 --complement | sort | uniq > $@

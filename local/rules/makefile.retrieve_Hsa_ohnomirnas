@@ -24,10 +24,10 @@ $(ORG)_mirbase_mirna_primary_transcript.gff3: $(ORG)_mirbase.gff3
 	cat $< | awk -F"\t" '$$3=="miRNA_primary_transcript"' | sort | uniq > $@
 
 $(ORG)_mirbase_mirna.tsv: $(ORG)_mirbase_mirna.gff3
-	cat $< | everygff2tab -g GFF3 ID Alias Name Derives_from > $@
+	cat $< | awk -F"\t" 'NR>13' | everygff2tab -g GFF3 ID Alias Name Derives_from > $@
 
 $(ORG)_mirbase_mirna_primary_transcript.tsv: $(ORG)_mirbase.gff3
-	cat $< | everygff2tab -g GFF3 ID Alias Name > $@
+	cat $< | awk -F"\t" 'NR>13' |  everygff2tab -g GFF3 ID Alias Name > $@
 
 $(ORG)_mirbase_primary_transcript_id_name.dic: $(ORG)_mirbase_mirna_primary_transcript.tsv
 	cat $< | awk -F"\t" '{print $$10"\t"$$11}' | sort | uniq > $@
