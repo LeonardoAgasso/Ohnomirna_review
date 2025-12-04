@@ -83,3 +83,21 @@ mgdb_3_hsa.premirna_paralog_pairs.extended_info.host_gene.names_only.tsv: mgdb_3
 %_pm_mixed.z_$(N_NM).tsv: %.gene.edge $(PM_PAIRS) $(OHNOLOGS)
 	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(word 3, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 ######################################################
+
+
+####################### Motif list #####################
+filtered_pm_pairs.tsv: $(PM_PAIRS) $(OM_PAIRS)
+	cat $(word 1, $^) | filter_2col.pl --both-orders -v 1 2 $(word 2, $^) | sort | uniq > $@
+
+wgd_bifan.tarbase.list.tsv: tarbase.gene.edge $(OM_PAIRS) $(OHNOLOGS)
+	ListBifan.py $(word 1, $^) $(word 2, $^) $(word 3, $^) > ../../motif_lists/$@
+
+ssd_bifan.tarbase.list.tsv: tarbase.gene.edge filtered_pm_pairs.tsv $(PARALOGS)
+	ListBifan.py $(word 1, $^) $(word 2, $^) $(word 3, $^) > ../../motif_lists/$@
+
+wgd_bifan.mirdip.list.tsv: mirdip.gene.edge $(OM_PAIRS) $(OHNOLOGS)
+	ListBifan.py $(word 1, $^) $(word 2, $^) $(word 3, $^) > ../../motif_lists/$@
+
+ssd_bifan.mirdip.list.tsv: mirdip.gene.edge filtered_pm_pairs.tsv $(PARALOGS)
+	ListBifan.py $(word 1, $^) $(word 2, $^) $(word 3, $^) > ../../motif_lists/$@
+######################################################

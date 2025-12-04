@@ -1,1 +1,0 @@
-../../local/rules/makefile.motif_analysis_ppi_bifan

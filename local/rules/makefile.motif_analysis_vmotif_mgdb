@@ -84,3 +84,21 @@ mgdb_3_hsa.premirna_paralog_pairs.extended_info.host_gene.names_only.tsv: mgdb_3
 	cat $(word 1, $^) | $(SCRIPT) $(word 2, $^) $(NM_PATH)nm_$*/ $(N_NM) > $(OUTPUT_DIR)$@
 ######################################################
 
+
+
+####################### Motif list #####################
+filtered_pm_pairs.tsv: $(PM_PAIRS) $(OM_PAIRS)
+	cat $(word 1, $^) | filter_2col.pl --both-orders -v 1 2 $(word 2, $^) | sort | uniq > $@
+
+wgd_vmotif.tarbase.list.tsv: tarbase.gene.edge $(OM_PAIRS)
+	ListVmotif.py $(word 1, $^) $(word 2, $^) > ../../motif_lists/$@
+
+ssd_vmotif.tarbase.list.tsv: tarbase.gene.edge filtered_pm_pairs.tsv
+	ListVmotif.py $(word 1, $^) $(word 2, $^) > ../../motif_lists/$@
+
+wgd_vmotif.mirdip.list.tsv: mirdip.gene.edge $(OM_PAIRS)
+	ListVmotif.py $(word 1, $^) $(word 2, $^) > ../../motif_lists/$@
+
+ssd_vmotif.mirdip.list.tsv: mirdip.gene.edge filtered_pm_pairs.tsv
+	ListVmotif.py $(word 1, $^) $(word 2, $^) > ../../motif_lists/$@
+######################################################
