@@ -4,7 +4,7 @@ ORG_CAP := Hsa
 ORG := hsa
 
 ohnomirna_pairs_predict_$(ORG_CAP)_existent.names.extended_info.tsv:
-	ln -s ../1_retrieve_Hsa_ohnomirnas/$@ ./$@
+	ln -s ../1.1_retrieve_Hsa_ohnomirnas/$@ ./$@
 
 %.gene_pairs.name.tsv:
 	ln -s ../../OhnomiRNAs/dataset/gene_pairs/$@ ./$@
@@ -13,7 +13,7 @@ gencode.protein_coding_genes.bed:
 	ln -s ../0_miRNA_parsing/$@ ./$@
 
 mgdb_3_$(ORG).premirna.tsv:
-	ln -s ../1_retrieve_Hsa_ohnomirnas/$@ ./$@
+	ln -s ../1.1_retrieve_Hsa_ohnomirnas/$@ ./$@
 
 mgdb_3_$(ORG).premirna.bed: mgdb_3_$(ORG).premirna.tsv
 	cat $< | awk -F"\t" '{print $$1"\t"$$4"\t"$$5"\t"$$9"\t"$$7"\t"$$10}' | sort | uniq > $@
